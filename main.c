@@ -5,12 +5,69 @@
 
 // https://cstack.github.io/db_tutorial/parts/part1.html
 
+typedef enum
+{
+    META_COMMAND_SUCCESS,
+    META_COMMAND_UNRECOGNIZED_COMMAND
+} MetaCommandResult;
+
+typedef enum
+{
+    PREPARE_SUCCESS,
+    PREPARE_UNRECOGNIZED_STATEMENT
+} PrepareResult;
+
+typedef enum
+{
+    STATEMENT_INSERT,
+    STATEMENT_SELECT
+} StatementType;
+
+typedef struct
+{
+    StatementType type;
+} Statement;
+
 typedef struct
 {
     char *data;
     int inputLength;
     int dataLength;
 } InpBuf;
+
+void execute_statment(Statement *statement)
+{
+    switch (statement->type)
+    {
+    case STATEMENT_SELECT:
+        printf("SELECT STATEMENT");
+        break;
+
+    case STATEMENT_INSERT:
+        printf("INSERT STATEMENT");
+        break;
+    }
+}
+
+MetaCommandResult do_meta_command(InpBuf *input_buffer)
+{
+    if (strcmp(input_buffer->data, ".exit") == 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+    else
+    {
+        return META_COMMAND_UNRECOGNIZED_COMMAND;
+    }
+}
+
+PrepareResult prepStat(InpBuf *buffer, Statement *statment)
+{
+    if (strncmp(buffer->data, "INSERT", 6) == 0)
+    {
+        return PREPARE_SUCCESS;
+    }
+}
 
 InpBuf *newBuffer(int length)
 {
@@ -54,16 +111,22 @@ int main()
     {
         prompt();
         readInput(inputBuffer);
-        printf(inputBuffer->data);
-        printf("\n");
-        if (strcmp(inputBuffer->data, "E") == 0)
+        if (strcmp(inputBuffer->data[0], ".") == 0)
         {
-            printf("closing....\n");
-            break;
+            switch (do_meta_command(inputBuffer)) // case: META_COMMAND_SUCCESS
+            {
+            case META_COMMAND_UNRECOGNIZED_COMMAND:
+                printf("unrecognized command");
+                break;
+            }
         }
-        else
+
+        Statement statment;
+        switch (prepStat(inputBuffer, &statment))
         {
-            printf("unrecognised command...\n");
+        case PREPARE_SUCCESS:
+            execute_statment(&statment);
+            break;
         }
     }
     free(inputBuffer->data);
